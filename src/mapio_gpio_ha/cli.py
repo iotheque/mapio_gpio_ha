@@ -59,7 +59,8 @@ def app() -> None:
 
     try:
         while True:
-            time.sleep(0.1)
+            time.sleep(1)
+            mapio_gpio.refresh_mapio_gpio_to_ha()
     except KeyboardInterrupt:
         pass
     finally:
