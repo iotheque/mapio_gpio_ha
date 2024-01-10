@@ -107,18 +107,38 @@ class MAPIO_GPIO:
         # instantiate an MQTTDevice object for ANA0 input
         self.ups = MqttSensor(
             MqttDeviceSettings("UPS Voltage", "ups", self.client),
-            "V",
+            "%",
             HaDeviceClass.BATTERY,
             True,
         )
 
     def refresh_mapio_gpio_to_ha(self) -> None:
-        # Read AIN0 value
-        output = os.popen("vcgencmd pmicrd 1d | awk '{print $3}'").read()  # nosec
-        int_value = 2 * int(output, 16) / 100
+        # Get PMIC model
+        model = os.popen("vcgencmd pmicrd 0 | awk '{print $3}'").read()  # nosec
+        if model.strip() == "a0":
+            # MAX LINEAR MXL7704
+            # Read AIN0 value
+            output = os.popen("vcgencmd pmicrd 0x1d | awk '{print $3}'").read()  # nosec
+            int_value = 2 * int(output, 16) / 100
+        else:
+            # DA9090 PMIC
+            # Read AIN0 value
+            output = os.popen("vcgencmd pmicrd 0x13 | awk '{print $3}'").read()  # nosec
+            int_value = 4 * int(output, 16) / 100
+        percent = 0
+        if int_value > 4:
+            percent = 100
+        elif int_value > 3.75:
+            percent = 75
+        elif int_value > 3.5:
+            percent = 50
+        elif int_value > 3.25:
+            percent = 25
+
         output = output.replace("volt=", "")
         output = output.replace("V", "")
-        self.ups.publish_state(int_value)
+
+        self.ups.publish_state(percent)
 
     def close_mapio_gpio_to_ha(self) -> None:
         # close the device for cleanup. Gets marked as offline/unavailable in homeassistant
