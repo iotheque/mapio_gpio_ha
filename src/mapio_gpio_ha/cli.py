@@ -51,7 +51,8 @@ def main(
 
 @main.command()
 def app() -> None:
-    logger = logging.getLogger((__name__))
+    """App entrypoint."""
+    logger = logging.getLogger(__name__)
     logger.info("Start mapio gpio to HA")
 
     mapio_gpio = MAPIO_GPIO()
