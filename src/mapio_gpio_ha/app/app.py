@@ -263,13 +263,6 @@ class MAPIO_GPIO:
         elif int_value > 3.25:
             percent = 25
 
-        # Check if a battery is present
-        chg_chg_n = os.popen("gpioget 1 8").read().strip()  # noqa
-        chg_boost_n = os.popen("gpioget 1 10").read().strip()  # noqa
-        if chg_boost_n == "1" and chg_chg_n == "1" and int_value < 4.2:
-            # No battery is present
-            percent = 0
-
         output = output.replace("volt=", "")
         output = output.replace("V", "")
 
