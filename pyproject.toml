@@ -25,6 +25,7 @@ dependencies = [
     "gpiod==1.5.3",
     "homeassistant-mqtt-binding==2.0.3",
     "paho-mqtt==1.6.1",
+    "pyserial==3.5",
 ]
 dynamic = ["version"]
 
