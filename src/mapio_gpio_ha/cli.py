@@ -65,11 +65,10 @@ def app() -> None:
     if enable_linky:
         thread = threading.Thread(target=mapio_gpio.read_teleinfo)
         thread.start()
-        thread.join()
     try:
         while True:
-            time.sleep(30)
             mapio_gpio.refresh_mapio_gpio_to_ha()
+            time.sleep(30)
     except KeyboardInterrupt:
         pass
     finally:
