@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:9b63fb87df9a37dfaa7a6e25f790350684bf209463011736af5e9c92536dfc98"
+content_hash = "sha256:adc97c10a3c242dee60d2de0863b77a940d4b6aad59c62aecfe59cb43e146bab"
 
 [[package]]
 name = "annotated-types"
@@ -271,16 +271,16 @@ files = [
 
 [[package]]
 name = "homeassistant-mqtt-binding"
-version = "2.0.3"
-requires_python = ">=3.8,<4.0"
+version = "3.0.0"
+requires_python = "<4.0,>=3.8"
 summary = "Bindings to implement arbitrary homeassistant devices in python using mqtt as interface"
 groups = ["default"]
 dependencies = [
-    "paho-mqtt<2.0,>=1.6",
+    "paho-mqtt<3,>=2",
 ]
 files = [
-    {file = "homeassistant_mqtt_binding-2.0.3-py3-none-any.whl", hash = "sha256:4a7b3a9378d33255e7eb510c1a8aa4fcd95e94960fb094cb68b463f99a99f4a4"},
-    {file = "homeassistant_mqtt_binding-2.0.3.tar.gz", hash = "sha256:6160f58cdac73758c65007ab08e4d71bfdd83cfdc158c65e0c9437266f69c16a"},
+    {file = "homeassistant_mqtt_binding-3.0.0-py3-none-any.whl", hash = "sha256:31cc0999f20a55cc1d97f5e1fe12dedbbbadcfd317657730a8df367dd1783194"},
+    {file = "homeassistant_mqtt_binding-3.0.0.tar.gz", hash = "sha256:2f97c3daf2a42d63eb6988cff1d5c38820bec88cda2a0d1179c75d5b362a8578"},
 ]
 
 [[package]]
@@ -432,11 +432,13 @@ files = [
 
 [[package]]
 name = "paho-mqtt"
-version = "1.6.1"
+version = "2.1.0"
+requires_python = ">=3.7"
 summary = "MQTT version 5.0/3.1.1 client class"
 groups = ["default"]
 files = [
-    {file = "paho-mqtt-1.6.1.tar.gz", hash = "sha256:2a8291c81623aec00372b5a85558a372c747cbca8e9934dfe218638b8eefc26f"},
+    {file = "paho_mqtt-2.1.0-py3-none-any.whl", hash = "sha256:6db9ba9b34ed5bc6b6e3812718c7e06e2fd7444540df2455d2c51bd58808feee"},
+    {file = "paho_mqtt-2.1.0.tar.gz", hash = "sha256:12d6e7511d4137555a3f6ea167ae846af2c7357b10bc6fa4f7c3968fc1723834"},
 ]
 
 [[package]]

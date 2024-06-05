@@ -23,8 +23,8 @@ classifiers = [
 dependencies = [
     "Click~=8.1.7",
     "gpiod==1.5.3",
-    "homeassistant-mqtt-binding==2.0.3",
-    "paho-mqtt==1.6.1",
+    "homeassistant-mqtt-binding==3.0.0",
+    "paho-mqtt==2.1.0",
     "pyserial==3.5",
 ]
 dynamic = ["version"]

@@ -12,8 +12,9 @@ from ha_mqtt.ha_device import HaDevice
 from ha_mqtt.mqtt_device_base import MqttDeviceBase, MqttDeviceSettings
 from ha_mqtt.mqtt_sensor import MqttSensor
 from ha_mqtt.mqtt_switch import MqttSwitch
-from ha_mqtt.util import HaDeviceClass
+from ha_mqtt.util import HaBinarySensorDeviceClass, HaSensorDeviceClass
 from paho.mqtt.client import Client
+from paho.mqtt.enums import CallbackAPIVersion
 
 # Pin definition
 RELAY1_CTRL_PIN = 25
@@ -23,25 +24,25 @@ RELAY1_CTRL_PIN = 25
 HA_LINKY_MEASURES: list[dict[str, Any]] = [
     {
         "unit": "W",
-        "device_class": HaDeviceClass.APPARENT_POWER,
+        "device_class": HaSensorDeviceClass.APPARENT_POWER,
         "state_class": "measurement",
         "exposed_variable": "apparent_power",
     },
     {
         "unit": "Wh",
-        "device_class": HaDeviceClass.ENERGY,
+        "device_class": HaSensorDeviceClass.ENERGY,
         "state_class": "total_increasing",
         "exposed_variable": "current_summ_delivered",
     },
     {
         "unit": "Wh",
-        "device_class": HaDeviceClass.ENERGY,
+        "device_class": HaSensorDeviceClass.ENERGY,
         "state_class": "total_increasing",
         "exposed_variable": "current_tier1_summ_delivered",
     },
     {
         "unit": "Wh",
-        "device_class": HaDeviceClass.ENERGY,
+        "device_class": HaSensorDeviceClass.ENERGY,
         "state_class": "total_increasing",
         "exposed_variable": "current_tier2_summ_delivered",
     },
@@ -92,21 +93,46 @@ class MqttTicSensor(MqttDeviceBase):
         self,
         settings: MqttDeviceSettings,
         unit: str,
-        device_class: HaDeviceClass,
+        device_class: HaSensorDeviceClass,
         state_class: str,
         send_only: bool = False,
     ):
         """Create sensor instance."""
-        self.device_class: Any = device_class
+        self.device_class = device_class
         self.unit_of_measurement = unit
         self.state_class = state_class
         super().__init__(settings, send_only)
 
     def pre_discovery(self) -> None:
         """Prediscovered function for MqttTicSensor."""
-        self.add_config_option("device_class", self.device_class.value)
-        self.add_config_option("unit_of_measurement", self.unit_of_measurement)
-        self.add_config_option("state_class", self.state_class)
+        self.add_config_option("device_class", self.device_class.value)  # type: ignore
+        self.add_config_option("unit_of_measurement", self.unit_of_measurement)  # type: ignore
+        self.add_config_option("state_class", self.state_class)  # type: ignore
+
+
+class MqttBinarySensor(MqttDeviceBase):
+    """class that implements an arbitrary binary sensor.
+
+    :param unit_of_measurement: string containing the unit of measurement, example: '°C'
+    :param device_class: :class:`~ha_mqtt.util.HaSensorDeviceClass` device class of this sensor
+    :param settings: as in :class:`~ha_mqtt.mqtt_device_base.MqttDeviceBase`
+    """
+
+    device_type = "binary_sensor"
+
+    def __init__(
+        self,
+        settings: MqttDeviceSettings,
+        device_class: HaBinarySensorDeviceClass,
+        send_only: bool = False,
+    ):
+        """Create sensor instance."""
+        self.device_class = device_class
+        super().__init__(settings, send_only)
+
+    def pre_discovery(self) -> None:
+        """Prediscovered function for MqttBinarySensor."""
+        self.add_config_option("device_class", self.device_class.value)  # type: ignore
 
 
 # callbacks for the on and off actions
@@ -186,7 +212,7 @@ class MAPIO_GPIO:
     def expose_mapio_gpio_to_ha(self, linky: bool = False) -> None:
         """Expose the desired GPIO to HA."""
         # instantiate an paho mqtt client and connect to the mqtt server
-        self.client = Client("mapio-gpio-ha")
+        self.client = Client(CallbackAPIVersion.VERSION2, "mapio-gpio-ha")
         self.client.connect("localhost", 1883)
         self.client.loop_start()
         self.linky_enable = linky
@@ -200,27 +226,39 @@ class MAPIO_GPIO:
         # assign callbacks actions
         self.relay1.callback_on = lambda: on(self.relay1, "RELAY1", self.relay1_ctrl)
         self.relay1.callback_off = lambda: off(self.relay1, "RELAY1", self.relay1_ctrl)
+        self.relay1.start()
 
         # User leds for HA
         self.led_r = MqttSwitch(MqttDeviceSettings("LED_R", "LED_R", self.client, dev))
         self.led_r.callback_on = lambda: on(self.led_r, "LED_R", self.led_r)
         self.led_r.callback_off = lambda: off(self.led_r, "LED_R", self.led_r)
+        self.led_r.start()
 
         self.led_g = MqttSwitch(MqttDeviceSettings("LED_G", "LED_G", self.client, dev))
         self.led_g.callback_on = lambda: on(self.led_g, "LED_G", self.led_g)
         self.led_g.callback_off = lambda: off(self.led_g, "LED_G", self.led_g)
+        self.led_g.start()
 
         self.led_b = MqttSwitch(MqttDeviceSettings("LED_B", "LED_B", self.client, dev))
         self.led_b.callback_on = lambda: on(self.led_b, "LED_B", self.led_b)
         self.led_b.callback_off = lambda: off(self.led_b, "LED_B", self.led_b)
+        self.led_b.start()
 
         # instantiate an MQTTDevice object for ANA0 input
         self.ups = MqttSensor(
             MqttDeviceSettings("UPS Voltage", "ups", self.client, dev),
+            HaSensorDeviceClass.BATTERY,
             "%",
-            HaDeviceClass.BATTERY,
             True,
         )
+        self.ups.start()
+
+        self.on_charge = MqttBinarySensor(
+            MqttDeviceSettings("Battery charging", "battery_charging", self.client, dev),
+            HaBinarySensorDeviceClass.BATTERY_CHARGING,
+            True,
+        )
+        self.on_charge.start()
 
         if self.linky_enable:
             self.linky: dict[str, Any] = {}
@@ -237,7 +275,7 @@ class MAPIO_GPIO:
                     measure["state_class"],
                     True,
                 )
-                self.linky[measure["exposed_variable"]].pre_discovery()
+                self.linky[measure["exposed_variable"]].start()
 
     def refresh_mapio_gpio_to_ha(self) -> None:
         """Function that refresh values to send to HA."""
@@ -263,10 +301,14 @@ class MAPIO_GPIO:
         elif int_value > 3.25:
             percent = 25
 
-        output = output.replace("volt=", "")
-        output = output.replace("V", "")
+        self.ups.update_state(percent)
 
-        self.ups.publish_state(percent)
+        # Check power is present
+        chg_acok_n = os.popen("gpioget 1 9").read().strip()  # noqa
+        if chg_acok_n == "0":
+            self.on_charge.update_state("ON")
+        else:
+            self.on_charge.update_state("OFF")
 
     def read_teleinfo(self, port: str = "/dev/ttyAMA3", baudrate: int = 1200) -> None:
         """Task that read teleinfo from Linky."""
@@ -285,8 +327,8 @@ class MAPIO_GPIO:
                     for register in LINKY_REGISTERS:
                         if line.startswith(register["name"]):
                             parsed_data[register["name"]] = line.split(" ")[1]
-                            self.logger.info(f"parsed_data {parsed_data}")
-                            self.linky[register["exposed_variable"]].publish_state(
+                            self.logger.debug(f"parsed_data {parsed_data}")
+                            self.linky[register["exposed_variable"]].update_state(
                                 parsed_data[register["name"]]
                             )
                 except UnicodeDecodeError:
@@ -301,14 +343,15 @@ class MAPIO_GPIO:
         self.relay1_ctrl.set_value(0)
         self.relay1_ctrl.release()
 
-        self.relay1.close()  # type: ignore
-        self.ups.close()  # type: ignore
+        self.relay1.stop()  # type: ignore
+        self.ups.stop()  # type: ignore
+        self.on_charge.stop()  # type: ignore
         if self.linky_enable:
             for measure in HA_LINKY_MEASURES:
-                self.linky[measure["exposed_variable"]].close()
+                self.linky[measure["exposed_variable"]].stop()
 
-        self.led_r.close()  # type: ignore
-        self.led_g.close()  # type: ignore
-        self.led_b.close()  # type: ignore
+        self.led_r.stop()  # type: ignore
+        self.led_g.stop()  # type: ignore
+        self.led_b.stop()  # type: ignore
         self.client.loop_stop()
         self.client.disconnect()
