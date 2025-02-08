@@ -304,7 +304,7 @@ class MAPIO_GPIO:
         self.ups.update_state(percent)
 
         # Check power is present
-        chg_acok_n = os.popen("gpioget 1 9").read().strip()  # noqa
+        chg_acok_n = os.popen("gpioget --numeric -c 2 9").read().strip()  # noqa
         if chg_acok_n == "0":
             self.on_charge.update_state("ON")
         else:
