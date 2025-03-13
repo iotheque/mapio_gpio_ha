@@ -4,7 +4,6 @@
 import logging
 import logging.config
 import sys
-import threading
 import time
 from pathlib import Path
 from typing import Optional
@@ -55,16 +54,9 @@ def app() -> None:
     """App entrypoint."""
     logger = logging.getLogger(__name__)
     logger.info("Start mapio gpio to HA")
-    enable_linky = False
-    if Path("/usr/local/homeassistant/enable_linky").exists():
-        logger.info("Enable linky teleinfo module")
-        enable_linky = True
     mapio_gpio = MAPIO_GPIO()
-    mapio_gpio.expose_mapio_gpio_to_ha(enable_linky)
+    mapio_gpio.expose_mapio_gpio_to_ha()
 
-    if enable_linky:
-        thread = threading.Thread(target=mapio_gpio.read_teleinfo)
-        thread.start()
     try:
         while True:
             mapio_gpio.refresh_mapio_gpio_to_ha()
